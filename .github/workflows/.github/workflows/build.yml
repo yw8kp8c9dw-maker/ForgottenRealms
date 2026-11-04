@@ -1,0 +1,36 @@
+name: Build Forgotten Realms
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          mkdir source
+          unzip -q "$(find . -maxdepth 1 -name '*.zip' | head -n 1)" -d source
+          PROJECT_DIR="$(dirname "$(find source -name build.gradle -print -quit)")"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Build mod
+        run: cd "$PROJECT_DIR" && gradle build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ForgottenRealms
+          path: source/**/build/libs/*.jar
